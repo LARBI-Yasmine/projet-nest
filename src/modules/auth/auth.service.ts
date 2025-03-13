@@ -52,4 +52,11 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+
+
+  async logout() {
+    // En pratique, c'est au frontend de supprimer le token stocké.
+    return { message: 'User logged out successfully' };
+  }
 }
