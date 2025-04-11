@@ -27,13 +27,7 @@ export class InterestsService {
     return plainToInstance(Interest, interest);
   }
 
-  // async update(id: number, updateInterestDto: UpdateInterestDto) {
-  //   const interest = await this.interestsRepository.findOne({ where: { id } });
-  //   if (interest) {
-  //     const updatedInterest = this.interestsRepository.merge(interest, updateInterestDto);
-
-  //   }
-  // }
+ 
 
   async remove(id: number) {
     await this.interestsRepository.delete(id);

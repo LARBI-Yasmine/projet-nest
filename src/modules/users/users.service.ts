@@ -5,9 +5,14 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
+import { Interest } from '../interests/entities/interest.entity';
+import { In } from 'typeorm';
+
 
 @Injectable()
 export class UsersService {
+  [x: string]: any;
+
   constructor(@InjectRepository(User) private usersRepository: Repository<User>) {}
 
   async findAll(): Promise<User[]> {
@@ -45,4 +50,46 @@ export class UsersService {
   async remove(id: string): Promise<void> {
     await this.usersRepository.delete(id);
   }
+
+
+
+
+
+
+async getUserInterests(userId: string): Promise<Interest[]> {
+  const user = await this.usersRepository.findOne({
+    where: { id: userId },
+    relations: ['interests'],
+  });
+
+  if (!user) {
+    throw new ConflictException('User not found');
+  }
+
+  return user.interests;
+}
+
+async addInterestsToUser(userId: string, interestNames: string[]) {
+  const user = await this.usersRepository.findOne({
+    where: { id: userId },
+    relations: ['interests'],
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const interests = await this.interestsRepository.findBy({
+    name: In(interestNames),
+  });
+
+  // Ajoute les nouveaux intérêts (ou remplace si c’est ce que tu veux)
+  user.interests = interests;
+
+  // Sauvegarde de l'utilisateur avec les relations
+  await this.usersRepository.save(user);
+
+  return user;
+}
+
 }

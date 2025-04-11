@@ -5,9 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/modules/users/users.module';
-import { JwtStrategy } from './jwt.strategy';
-import { BlacklistService } from './blacklist.service';
-import { RolesGuard } from './roles.guard';
+import { JwtStrategy } from 'src/modules/auth/strategies/jwt.strategy';
+import { BlacklistService } from 'src/modules/auth/blackList.service';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 
 @Global()
 @Module({
