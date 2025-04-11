@@ -1,5 +1,4 @@
 import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-//+ config dans main.ts
 import { UserRole } from './user-role.type';
 
 export class CreateUserDto {
@@ -7,16 +6,12 @@ export class CreateUserDto {
   email: string;
 
   @IsString()
-  @MinLength(6,{message:'Mot de passe de 6 caractéres ou plus.'})
+  @IsOptional()
+  name: string;
+
+  @IsString()
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
-
-  @IsString()
-  @IsOptional()
-  firstname: string;
-
-  @IsString()
-  @IsOptional()
-  lastname: string;
 
   @IsOptional()
   @IsEnum(UserRole)

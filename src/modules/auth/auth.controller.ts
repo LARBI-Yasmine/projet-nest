@@ -1,27 +1,51 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignUpDto } from './dto/signUp.dto';
-import { SignInDto } from './dto/signInDto.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Controller, Post, Body, UnauthorizedException, Req, Get, UseGuards, Res } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { UserRole } from 'src/modules/users/dto/user-role.type';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
+import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
+import { UsersService } from 'src/modules/users/users.service';
+import { User } from 'src/modules/users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
-  async signUp(@Body() signUpDto: SignUpDto) {
-    return this.authService.signUp(signUpDto);
+  async register(@Body() createUserDto: CreateUserDto): Promise<User> {
+    return this.usersService.create(createUserDto);
   }
 
   @Post('login')
-  async signIn(@Body() signInDto: SignInDto) {
-    return this.authService.signIn(signInDto);
+  async login(@Body() body: { email: string; password: string }): Promise<any> {
+    const user = await this.authService.validateUser(body.email, body.password);
+    return this.authService.login(user);
   }
 
-
-  @UseGuards(JwtAuthGuard) // 🔒 Sécurise cette route
   @Post('logout')
-  async logout() {
-    return this.authService.logout();
+  async logout(@Req() req): Promise<void> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('No authorization header provided');
+    }
+    const token = authHeader.split(' ')[1];
+    return this.authService.logout(token);
+  }
+
+  @Get('verify')
+  @UseGuards(AuthGuard('jwt'))
+  async verify(@Req() req): Promise<any> {
+    return { message: 'Token is valid', user: req.user };
+  }
+
+  @Get('admin')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async admin(@Req() req): Promise<any> {
+    return { message: 'Admin route', user: req.user };
   }
 }

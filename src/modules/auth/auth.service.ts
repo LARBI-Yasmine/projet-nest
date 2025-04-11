@@ -1,62 +1,40 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { UsersService } from 'src/users/users.service';
+import { BlacklistService } from './blacklist.service';
 import * as bcrypt from 'bcrypt';
-import { User } from '../users/entities/user.entity';
-import { SignUpDto } from './dto/signUp.dto';
-import { SignInDto } from './dto/signInDto.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User) private userRepository: Repository<User>,
-    private jwtService: JwtService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly blacklistService: BlacklistService,
   ) {}
 
-  async signUp(signUpDto: SignUpDto) {
-    const { email, password, firstname, lastname } = signUpDto;
-
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await this.userRepository.findOne({ where: { email } });
-    if (existingUser) {
-      throw new ConflictException('Email already exists');
-    }
-
-    // Hasher le mot de passe
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Créer et enregistrer l'utilisateur
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      firstname,
-      lastname,
-    });
-
-    await this.userRepository.save(user);
-    return { message: 'User registered successfully' };
-  }
-
-  async signIn(signInDto: SignInDto) {
-    const { email, password } = signInDto;
-    const user = await this.userRepository.findOne({ where: { email } });
-
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.findByEmail(email);
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    const payload = { sub: user.id, role: user.role };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    return user;
   }
 
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.id, role: user.role };
+    return { access_token: this.jwtService.sign(payload) };
+  }
 
+  async logout(token: string): Promise<void> {
+    this.blacklistService.addTokenToBlacklist(token);
+  }
 
-  async logout() {
-    // En pratique, c'est au frontend de supprimer le token stocké.
-    return { message: 'User logged out successfully' };
+  async validateToken(token: string): Promise<any> {
+    if (this.blacklistService.isTokenBlacklisted(token)) {
+      throw new UnauthorizedException('Token is invalid');
+    }
+
+    return this.jwtService.verify(token);
   }
 }

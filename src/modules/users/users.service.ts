@@ -1,43 +1,48 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-  ) {}
+  constructor(@InjectRepository(User) private usersRepository: Repository<User>) {}
 
   async findAll(): Promise<User[]> {
-    const users = await this.userRepository.find();
+    const users = await this.usersRepository.find();
     return plainToInstance(User, users);
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.userRepository.findOneBy({ id });
+  async findOne(id: string): Promise<User | null> {
+    if (!id) {
+      return null;
+    }
+    const user = await this.usersRepository.findOne({ where: { id } });
     return plainToInstance(User, user);
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async findByEmail(email: string): Promise<User | null> {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    return user;
+  }
 
-    //verification que l'email n'existe pas en bdd
-    const existingUser = await this.userRepository.findOneBy({email : createUserDto.email,});
-    if(existingUser){
-      throw new ConflictException('cet email est déja utilisé');
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const existingUser = await this.usersRepository.findOne({ where: { email: createUserDto.email } });
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
     }
 
-    //Hash du mdp
     const saltRounds = 10;
-    const hashPassword = await bcrypt.hash(createUserDto.password,saltRounds);
+    const hashPassword = await bcrypt.hash(createUserDto.password, saltRounds);
 
-    //inserer et return user
-    const newUser = this.userRepository.create({ ...createUserDto });
-    const savedUser = await this.userRepository.save(newUser);
-    return plainToInstance(User, savedUser); //pour exclure le mdp 
+    const newUser = this.usersRepository.create({ ...createUserDto, password: hashPassword });
+    const savedUser = await this.usersRepository.save(newUser);
+    return plainToInstance(User, savedUser);
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.usersRepository.delete(id);
   }
 }
