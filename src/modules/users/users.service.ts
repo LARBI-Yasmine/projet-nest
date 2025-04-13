@@ -13,7 +13,11 @@ import { In } from 'typeorm';
 export class UsersService {
   [x: string]: any;
 
-  constructor(@InjectRepository(User) private usersRepository: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private usersRepository: Repository<User>,
+    @InjectRepository(Interest)
+    private interestsRepository: Repository<Interest>,
+  ) {}
 
   async findAll(): Promise<User[]> {
     const users = await this.usersRepository.find();
@@ -83,11 +87,9 @@ async addInterestsToUser(userId: string, interestNames: string[]) {
     name: In(interestNames),
   });
 
-  // Ajoute les nouveaux intérêts (ou remplace si c’est ce que tu veux)
   user.interests = interests;
 
-  // Sauvegarde de l'utilisateur avec les relations
-  await this.usersRepository.save(user);
+   await this.usersRepository.save(user);
 
   return user;
 }

@@ -1,7 +1,7 @@
 
 import { IsUUID, IsArray, IsString } from 'class-validator';
 
-export class AddInterestsDto {
+export class InterestDto {
   @IsUUID()
   userId: string;
 

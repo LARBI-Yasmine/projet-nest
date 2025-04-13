@@ -6,7 +6,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Roles } from 'src/modules/auth/roles.decorator';
 import { UserRole } from './dto/user-role.type';
-import { AddInterestsDto } from '../interests/dto/interest.dto';
+import { InterestDto } from 'src//modules/interests/dto/interest.dto';
 import { User as UserDecorator } from '../users/user.decorator'; 
 
 @Controller('users')
@@ -42,12 +42,17 @@ export class UsersController {
   }
 
 
+  // @Post('interests')
+  // @UseGuards(AuthGuard('jwt'))
+  // async addInterestsToUser(@Body() addInterestsDto: AddInterestsDto) {
+  //   return this.usersService.addInterestsToUser(addInterestsDto.userId, addInterestsDto.interestNames);
+  // }
+
   @Post('interests')
   @UseGuards(AuthGuard('jwt'))
-  async addInterestsToUser(@Body() addInterestsDto: AddInterestsDto) {
-    return this.usersService.addInterestsToUser(addInterestsDto.userId, addInterestsDto.interestNames);
+  async addInterestsToUser(@Body() interestDto: InterestDto) {
+    return this.usersService.addInterestsToUser(interestDto.userId, interestDto.interestNames);
   }
-
 
   @Get('interests')
   @UseGuards(AuthGuard('jwt'))
